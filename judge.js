@@ -37,7 +37,7 @@
     else if (S.step === "confirm") h = confirmId();
     else if (!S.data) h = '<div class="jfull"><div class="muted" style="text-align:center">加载中…</div></div>';
     else h = S.view === "score" ? score() : S.view === "success" ? success() : list();
-    bg.setDim(S.step !== "in" ? .45 : S.view === "score" ? .76 : S.view === "success" ? .55 : .5);
+    bg.setDim(S.step !== "in" ? .45 : S.view === "score" ? .76 : S.view === "success" ? .55 : .62);
     var y = window.scrollY; root.innerHTML = h; window.scrollTo(0, y);
   }
   function pick() {
@@ -67,7 +67,7 @@
     d.cases.forEach(function (c, i) {
       var sc = mine[c.id], op = opened.indexOf(c.id) >= 0, isCur = c.id === cur, st, cls = "ccard", btn = "";
       if (sc) { st = '<span class="gd">✓ 已评分 · ' + sc.total + " 分</span>"; btn = '<button class="btn-ghost sm" data-act="enter" data-v="' + c.id + '">修改评分</button>'; }
-      else if (op) { st = '<span class="gd">' + (isCur ? "● 正在评分" : "已开放 · 待评分") + "</span>"; cls += " on"; btn = '<button class="btn sm" data-act="enter" data-v="' + c.id + '">进入评分</button>'; }
+      else if (op) { st = isCur ? '<span class="gd">● 正在评分</span>' : '<span class="lv">已开放 · 待评分</span>'; cls += isCur ? " on" : " open"; btn = '<button class="' + (isCur ? "btn" : "btn-lv") + ' sm" data-act="enter" data-v="' + c.id + '">进入评分</button>'; }
       else { st = '<span class="dim">🔒 尚未开放</span>'; cls += " off"; }
       h += '<div class="' + cls + '"><div class="row-b"><span class="mono gd2">CASE ' + pad(i + 1) + "</span>" + st + '</div><div class="sm2">' + esc(c.region) + "大区 · " + esc(c.name) + '</div><div class="ctitle">' + esc(c.title) + "</div>" + btn + "</div>";
     });
