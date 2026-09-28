@@ -37,7 +37,7 @@
     else if (S.step === "confirm") h = confirmId();
     else if (!S.data) h = '<div class="jfull"><div class="muted" style="text-align:center">加载中…</div></div>';
     else h = S.view === "score" ? score() : S.view === "success" ? success() : list();
-    bg.setDim(S.step !== "in" ? .45 : S.view === "score" ? .76 : S.view === "success" ? .2 : .5);
+    bg.setDim(S.step !== "in" ? .45 : S.view === "score" ? .76 : S.view === "success" ? .55 : .5);
     var y = window.scrollY; root.innerHTML = h; window.scrollTo(0, y);
   }
   function pick() {
