@@ -41,6 +41,7 @@
     saveJudge: function (c, o) { return rpc("final_admin_save_judge", { p_code: c, p_judge: o }); },
     deleteJudge: function (c, id) { return rpc("final_admin_delete_judge", { p_code: c, p_judge_id: id }); },
     setJudgeActive: function (c, id, a) { return rpc("final_admin_set_judge_active", { p_code: c, p_judge_id: id, p_active: a }); },
+    clearJudge: function (c, id) { return rpc("final_admin_clear_judge_scores", { p_code: c, p_judge_id: id }); },
     setVote: function (c, id, v) { return rpc("final_admin_set_vote", { p_code: c, p_case_id: id, p_votes: v }); },
     setReveal: function (c, s) { return rpc("final_admin_set_reveal", { p_code: c, p_step: s }); },
     reset: function (c) { return rpc("final_admin_reset", { p_code: c }); }

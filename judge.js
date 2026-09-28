@@ -6,8 +6,9 @@
   function start() {
     root = document.getElementById("root");
     bg = F.bg({ layout: innerWidth < innerHeight ? "tall" : "wide", dim: .45 });
-    var saved = F.store.get("judge", null);
-    if (saved) { S.jid = saved.id; S.name = saved.name; S.step = "in"; }
+    var saved = F.store.get("judge", null), qm = location.hash.match(/[?&]j=(\d+)/);
+    S.qrId = qm ? +qm[1] : null;
+    if (saved && (!S.qrId || S.qrId === saved.id)) { S.jid = saved.id; S.name = saved.name; S.step = "in"; }
     root.addEventListener("click", click);
     root.addEventListener("change", function (e) { if (e.target.id === "jsel") { S.draft = e.target.value; render(); } });
     render();
@@ -17,7 +18,11 @@
   }
   function refresh() {
     if (S.step !== "in") {
-      return API.judgeList().then(function (l) { S.list = l || []; S.err = ""; render(); }).catch(function (e) { S.err = e.message; render(); });
+      return API.judgeList().then(function (l) {
+        S.list = l || []; S.err = "";
+        if (S.qrId && S.step === "pick") { var q = S.list.find(function (x) { return x.id === S.qrId; }); S.qrId = null; if (q) { S.jid = q.id; S.name = q.name; S.draft = String(q.id); S.step = "confirm"; } }
+        render();
+      }).catch(function (e) { S.err = e.message; render(); });
     }
     return API.judgeState(S.jid).then(function (d) { S.data = d; S.err = ""; render(); }).catch(function (e) {
       if (/不存在|停用/.test(e.message)) { F.store.del("judge"); S.step = "pick"; S.jid = null; F.toast(e.message); refresh(); }
@@ -102,7 +107,7 @@
     if (a === "next") { var j = S.list.find(function (x) { return String(x.id) === S.draft; }); if (j) { S.jid = j.id; S.name = j.name; S.step = "confirm"; go(true); } }
     else if (a === "back") { S.step = "pick"; go(true); }
     else if (a === "ok") { F.store.set("judge", { id: S.jid, name: S.name }); S.step = "in"; S.view = "list"; S.data = null; go(true); refresh(); }
-    else if (a === "switch") { F.store.del("judge"); S.step = "pick"; S.draft = ""; S.data = null; refresh(); }
+    else if (a === "switch") { F.store.del("judge"); S.step = "pick"; S.draft = ""; S.data = null; history.replaceState(null, "", "#/judge"); refresh(); }
     else if (a === "enter") { var id = +v, sc = (S.data.scores || {})[id]; S.caseId = id; S.picks = sc ? JSON.parse(JSON.stringify(sc.details)) : {}; S.confirm = false; S.view = "score"; go(true); }
     else if (a === "pick") { var p = v.split(":"), k = p[0], n = +p[1], cr = F.CRIT.find(function (x) { return x.k === k; }); if (S.picks[k] === n && cr.optional) delete S.picks[k]; else S.picks[k] = n; render(); }
     else if (a === "tolist") { S.view = "list"; S.confirm = false; go(true); }

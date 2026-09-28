@@ -2,7 +2,8 @@
 (function () {
   var IMG = new Image(), loaded = false, waiters = [];
   IMG.onload = function () { loaded = true; waiters.forEach(function (f) { f(); }); waiters = []; };
-  IMG.src = "assets/galaxy-bg.png";
+  IMG.onerror = function () { if (!IMG.dataset.alt) { IMG.dataset.alt = 1; IMG.src = "assets/galaxy-bg.png"; } };
+  IMG.src = "galaxy-bg.png";
   function rng(seed) { var a = seed >>> 0; return function () { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
   function G(r) { return (r() + r() + r() - 1.5) / 1.5; }
   function off(W, H, d) { var o = document.createElement("canvas"); o.width = Math.max(1, W * d); o.height = Math.max(1, H * d); var x = o.getContext("2d"); x.scale(d, d); return [o, x]; }

@@ -106,12 +106,12 @@
   }
   function judges(M, d) {
     var nC = d.cases.length;
-    return '<div class="row-b bar-top"><span class="muted sm">共 ' + d.judges.length + " 位评委 · 启用 " + M.judges.length + ' 位 · 停用的评委不计入进度和平均分，重新启用后恢复</span><button class="btn-sm gold" data-act="addJudge">+ 添加评委</button></div>' +
+    return '<div class="row-b bar-top"><span class="muted sm">共 ' + d.judges.length + " 位评委 · 启用 " + M.judges.length + ' 位 · 停用的评委不计入进度和平均分，重新启用后恢复</span><span class="nowrap"><button class="btn-sm" data-act="qrAll">通用入口二维码</button> <button class="btn-sm" data-act="qrPrint">打印全部评委二维码</button> <button class="btn-sm gold" data-act="addJudge">+ 添加评委</button></span></div>' +
       '<div class="card pad"><table><tr><th>#</th><th>评委姓名</th><th>职位</th><th>状态</th><th>评分进度</th><th class="r">操作</th></tr>' +
       d.judges.map(function (j, i) {
         var done = d.scores.filter(function (s) { return s.judge_id === j.id; }).length;
         return '<tr style="opacity:' + (j.active ? 1 : .55) + '"><td class="mono muted">' + pad(i + 1) + "</td><td>" + esc(j.name) + '</td><td class="' + (j.title ? "" : "dim") + '">' + esc(j.title || "未填写") + '</td><td class="' + (j.active ? "ok" : "dim") + '">● ' + (j.active ? "启用" : "已停用") +
-          '</td><td><div class="prog"><div class="bar"><i style="width:' + Math.round(done / Math.max(1, nC) * 100) + '%"></i></div><span class="mono">' + done + "/" + nC + '</span></div></td><td class="r nowrap"><button class="btn-sm" data-act="toggleJudge" data-v="' + j.id + '">' + (j.active ? "停用" : "启用") + '</button> <button class="btn-sm" data-act="editJudge" data-v="' + j.id + '">编辑</button> <button class="btn-sm danger" data-act="delJudge" data-v="' + j.id + '">删除</button></td></tr>';
+          '</td><td><div class="prog"><div class="bar"><i style="width:' + Math.round(done / Math.max(1, nC) * 100) + '%"></i></div><span class="mono">' + done + "/" + nC + '</span></div></td><td class="r nowrap"><button class="btn-sm" data-act="qrJudge" data-v="' + j.id + '">二维码</button> <button class="btn-sm" data-act="clearJudge" data-v="' + j.id + '"' + (done ? "" : " disabled") + '>清空评分</button> <button class="btn-sm" data-act="toggleJudge" data-v="' + j.id + '">' + (j.active ? "停用" : "启用") + '</button> <button class="btn-sm" data-act="editJudge" data-v="' + j.id + '">编辑</button> <button class="btn-sm danger" data-act="delJudge" data-v="' + j.id + '">删除</button></td></tr>';
       }).join("") + "</table></div>";
   }
   function votes(M, d) {
@@ -163,6 +163,16 @@
   function confirmBox(title, msg, label, fn) {
     F.modal(title, '<div class="muted">' + msg + "</div>", [{ label: "取消" }, { label: label, danger: true, onClick: function (close) { close(); act(fn()); } }]);
   }
+  function judgeUrl(id) { return C.SITE_URL.replace(/\/?$/, "/") + "#/judge" + (id ? "?j=" + id : ""); }
+  function showQR(title, name, url, tip) {
+    F.modal(title, '<div class="qr-card"><div class="qr">' + QR.svg(url, 260) + '</div><div class="qn">' + esc(name) + '</div><div class="sm muted">' + esc(tip) + '</div><div class="ql">' + esc(url) + "</div></div>", [{ label: "关闭" }]);
+  }
+  function printQR(list) {
+    var w = window.open("", "_blank"); if (!w) return F.toast("请允许弹出窗口");
+    w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>评委二维码</title><style>body{margin:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}.g{display:grid;grid-template-columns:repeat(3,1fr)}.c{border:1px dashed #bbb;padding:18px 10px;text-align:center;page-break-inside:avoid}.n{font-size:22px;font-weight:700;margin-top:6px}.s{font-size:11px;color:#666;margin-top:4px}.h{text-align:center;padding:14px;font-size:16px}@media print{.h{display:none}}</style></head><body><div class="h">逐光行动 · 点亮星河 · 决赛评委专属二维码（Ctrl+P 打印后裁开分发）</div><div class="g">' +
+      list.map(function (j) { return '<div class="c">' + QR.svg(judgeUrl(j.id), 180) + '<div class="n">' + esc(j.name) + ' 评委</div><div class="s">逐光行动 · 决赛评分 · 仅限本人使用</div></div>'; }).join("") + "</div></body></html>");
+    w.document.close();
+  }
   function click(e) {
     var t = e.target.closest("[data-act]"); if (!t || t.disabled) return;
     var a = t.dataset.act, v = t.dataset.v, d = A.data;
@@ -184,6 +194,10 @@
     else if (a === "addJudge") judgeForm(null);
     else if (a === "editJudge") judgeForm(d.judges.find(function (x) { return x.id === +v; }));
     else if (a === "toggleJudge") { var jj = d.judges.find(function (x) { return x.id === +v; }); act(API.setJudgeActive(A.code, jj.id, !jj.active)); }
+    else if (a === "clearJudge") { var jc = d.judges.find(function (x) { return x.id === +v; }), nc = d.scores.filter(function (s) { return s.judge_id === jc.id; }).length; confirmBox("清空评委评分", "确定清空评委「" + esc(jc.name) + "」的全部 " + nc + " 条评分？评委本人保留，可以重新打分。此操作无法撤销。", "确认清空", function () { return API.clearJudge(A.code, jc.id); }); }
+    else if (a === "qrJudge") { var jq = d.judges.find(function (x) { return x.id === +v; }); showQR(jq.name + " 评委专属二维码", jq.name, judgeUrl(jq.id), "扫码后直接进入该评委的身份确认页"); }
+    else if (a === "qrAll") showQR("评委通用入口", "评委评分入口", judgeUrl(null), "扫码后在下拉框选择自己的姓名");
+    else if (a === "qrPrint") printQR(d.judges.filter(function (x) { return x.active; }));
     else if (a === "delJudge") { var jd = d.judges.find(function (x) { return x.id === +v; }); confirmBox("删除评委", "确定删除评委「" + esc(jd.name) + "」？TA 的所有评分将一并删除。如只是暂时不参与，请用「停用」。", "确认删除", function () { return API.deleteJudge(A.code, jd.id); }); }
     else if (a === "revNext") act(API.setReveal(A.code, (d.reveal_step || 0) + 1));
     else if (a === "revReset") act(API.setReveal(A.code, 0));
