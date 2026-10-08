@@ -132,12 +132,13 @@
   }
   function reveal(M, d) {
     var rv = d.reveal_step || 0, rk = M.ranked;
-    var steps = [6, 5, 4, 3, 2, 1].map(function (k, i) {
-      var r = rk[k - 1], done = rv > i;
-      return "<tr><td>第 " + k + " 名</td><td>" + F.award(k) + "</td><td>" + (done && r ? "CASE " + r.no + " · " + esc(r.c.region + " - " + r.c.name) + " · No." + r.final : "—") + '</td><td class="r ' + (done ? "gd" : rv === i ? "gd2" : "dim") + '">' + (done ? "已揭晓" : rv === i ? "下一个" : "待揭晓") + "</td></tr>";
-    }).join("") + "<tr><td>第 7–12 名</td><td>—</td><td>" + (rv >= 7 ? "已一键放出" : "—") + '</td><td class="r ' + (rv >= 7 ? "gd" : rv === 6 ? "gd2" : "dim") + '">' + (rv >= 7 ? "已揭晓" : rv === 6 ? "下一个" : "待揭晓") + "</td></tr>";
-    var label = rv < 6 ? "揭晓第 " + (6 - rv) + " 名" : rv === 6 ? "放出第 7–12 名" : "已全部揭晓";
-    return '<div class="cols2 rv"><div class="card pad"><b>揭晓顺序</b>' + (rk.length < d.cases.length ? '<div class="err">评分尚未全部完成（已排名 ' + rk.length + " / " + d.cases.length + "），请确认后再揭晓</div>" : "") + "<table>" + steps + '</table></div><div class="rv-side"><button class="btn" data-act="revNext"' + (rv >= 7 ? " disabled" : "") + ">" + label + '</button><button class="btn-ghost" data-act="revReset">重置揭晓</button><div class="card pad sm muted">揭晓大屏在另一台电脑打开：<br><a href="' + esc(C.SITE_URL) + '#/reveal" target="_blank">' + esc(C.SITE_URL) + "#/reveal</a><br>输入同一管理密码后投屏。这里每点一次，大屏同步揭晓并放烟花。</div>" +
+    var B = function (k) { return 1 << (k - 1); }, ON = function (k) { return (rv & B(k)) !== 0; }, nk = [6, 5, 4, 3, 2, 1, 7].find(function (k) { return !ON(k); }) || 0;
+    var steps = [6, 5, 4, 3, 2, 1].map(function (k) {
+      var r = rk[k - 1], done = ON(k), nx = k === nk;
+      return "<tr><td>第 " + k + " 名</td><td>" + F.award(k) + "</td><td>" + (done && r ? "CASE " + r.no + " · " + esc(r.c.region + " - " + r.c.name) + " · No." + r.final : "—") + '</td><td class="r ' + (done ? "gd" : nx ? "gd2" : "dim") + '">' + (done ? "已揭晓" : nx ? "下一个" : "待揭晓") + "</td></tr>";
+    }).join("") + "<tr><td>第 7–12 名</td><td>优胜奖</td><td>" + (ON(7) ? "已一键放出" : "—") + '</td><td class="r ' + (ON(7) ? "gd" : nk === 7 ? "gd2" : "dim") + '">' + (ON(7) ? "已揭晓" : nk === 7 ? "下一个" : "待揭晓") + "</td></tr>";
+    var label = !nk ? "已全部揭晓" : nk === 7 ? "放出优胜奖（第 7–12 名）" : "揭晓第 " + nk + " 名";
+    return '<div class="cols2 rv"><div class="card pad"><b>揭晓顺序</b>' + (rk.length < d.cases.length ? '<div class="err">评分尚未全部完成（已排名 ' + rk.length + " / " + d.cases.length + "），请确认后再揭晓</div>" : "") + "<table>" + steps + '</table></div><div class="rv-side"><button class="btn" data-act="revNext"' + (!nk ? " disabled" : "") + ">" + label + '</button><button class="btn-ghost" data-act="revReset">重置揭晓</button><div class="card pad sm muted">揭晓大屏在另一台电脑打开：<br><a href="' + esc(C.SITE_URL) + '#/reveal" target="_blank">' + esc(C.SITE_URL) + "#/reveal</a><br>输入同一管理密码后投屏。这里每点一次，大屏同步揭晓并放烟花；也可以直接在大屏上点击任一奖位单独揭晓。</div>" +
       '<div class="card pad sm muted">评委扫码入口：<br><a href="' + esc(C.SITE_URL) + '#/judge" target="_blank">' + esc(C.SITE_URL) + "#/judge</a></div></div></div>";
   }
   function caseForm(c) {
@@ -199,7 +200,7 @@
     else if (a === "qrAll") showQR("评委通用入口", "评委评分入口", judgeUrl(null), "扫码后在下拉框选择自己的姓名");
     else if (a === "qrPrint") printQR(d.judges.filter(function (x) { return x.active; }));
     else if (a === "delJudge") { var jd = d.judges.find(function (x) { return x.id === +v; }); confirmBox("删除评委", "确定删除评委「" + esc(jd.name) + "」？TA 的所有评分将一并删除。如只是暂时不参与，请用「停用」。", "确认删除", function () { return API.deleteJudge(A.code, jd.id); }); }
-    else if (a === "revNext") act(API.setReveal(A.code, (d.reveal_step || 0) + 1));
+    else if (a === "revNext") act(API.setReveal(A.code, (function (rv) { var k = [6, 5, 4, 3, 2, 1, 7].find(function (k) { return !(rv & (1 << (k - 1))); }); return k ? rv | (1 << (k - 1)) : rv; })(d.reveal_step || 0)));
     else if (a === "revReset") act(API.setReveal(A.code, 0));
     else if (a === "reset") confirmBox("清空评分数据", "将删除全部评委评分、大众票数，并重置开放状态和揭晓进度（案例和评委保留）。一般在彩排结束后使用。", "确认清空", function () { return API.reset(A.code); });
     else if (a === "csv") exportCsv();

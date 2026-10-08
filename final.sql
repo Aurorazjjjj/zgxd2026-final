@@ -252,7 +252,7 @@ create or replace function final_admin_set_reveal(p_code text, p_step int) retur
 language plpgsql security definer set search_path = public as $$
 begin
   perform final_chk(p_code);
-  update final_state set reveal_step = greatest(0, least(7, p_step)) where id = 1;
+  update final_state set reveal_step = greatest(0, least(127, p_step)) where id = 1;
   perform final_bump();
 end $$;
 
